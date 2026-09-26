@@ -1,0 +1,20 @@
+{
+  "name": "phuong-dung-crm",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Quản lý & chăm sóc khách hàng – Thẩm mỹ viện Phương Dung",
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/setup-env.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "firebase": "^12.19.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

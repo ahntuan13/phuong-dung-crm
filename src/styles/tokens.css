@@ -1,0 +1,22 @@
+/* Bảng màu, font, khoảng cách – đổi theme ở đây */
+:root{
+  --bg:#FBF5F3; --surface:#FFFFFF; --surface-2:#F8EEEC; --ink:#4A3440; --ink-2:#8D7682; --line:#F0E1DE;
+  --brand:#B56E7D; --brand-deep:#8E4F5E; --brand-ink:#4A3440; --brand-soft:#F6E3E6;
+  --rose:#B56E7D; --rose-soft:#F8E6E8; --sage:#8FA897; --gold:#C8A36A;
+  --ok:#6F8F78; --ok-soft:#E6EFE8; --warn:#A87A35; --warn-soft:#FBF0DD; --danger:#B04A5A;
+  --petal:#F2C6CE; --petal-2:#F8DDE2; --leaf:#A9BFAE;
+  --shadow:0 1px 2px rgba(120,70,85,.05),0 10px 30px rgba(120,70,85,.07);
+  --sans:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --serif:"Cormorant Garamond","Lora",Georgia,"Times New Roman",serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#211A1E; --surface:#2A2126; --surface-2:#33282E; --ink:#F3E6EA; --ink-2:#BCA5AF; --line:#40323A;
+  --brand:#D4919F; --brand-deep:#E7B0BC; --brand-ink:#F3E6EA; --brand-soft:#3E2C33; --rose:#D4919F; --rose-soft:#43303A;
+  --ok:#9FC3A9; --ok-soft:#2B3A30; --warn:#E0B872; --warn-soft:#3C3223; --danger:#EE9AA6;
+  --petal:#7E4C59; --petal-2:#5E3C46; --leaf:#5F7A66; --shadow:none;}}
+:root[data-theme="dark"]{
+  --bg:#211A1E; --surface:#2A2126; --surface-2:#33282E; --ink:#F3E6EA; --ink-2:#BCA5AF; --line:#40323A;
+  --brand:#D4919F; --brand-deep:#E7B0BC; --brand-ink:#F3E6EA; --brand-soft:#3E2C33; --rose:#D4919F; --rose-soft:#43303A;
+  --ok:#9FC3A9; --ok-soft:#2B3A30; --warn:#E0B872; --warn-soft:#3C3223; --danger:#EE9AA6;
+  --petal:#7E4C59; --petal-2:#5E3C46; --leaf:#5F7A66; --shadow:none;}

@@ -1,0 +1,38 @@
+/* Reset, typography, bố cục khung (sidebar + main) */
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+a{color:var(--brand-deep)}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.nav{background:linear-gradient(180deg,var(--surface) 0%,var(--rose-soft) 100%);border-right:1px solid var(--line);color:var(--ink);padding:24px 14px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.brand{padding:0 10px 22px;display:flex;gap:10px;align-items:center}
+.brand svg{width:40px;height:40px;flex:none}
+.brand b{display:block;white-space:nowrap;font:600 23px/1 var(--serif);color:var(--brand-deep);letter-spacing:.3px}
+.brand span{font-size:12px;color:var(--ink-2)}
+.nav button{all:unset;cursor:pointer;display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:999px;font-size:14.5px;color:var(--ink-2)}
+.nav button:hover{background:var(--surface-2);color:var(--ink)}
+.nav button.on{background:var(--brand);color:#fff;font-weight:500;box-shadow:0 6px 16px rgba(181,110,125,.28)}
+.nav svg.ic{width:18px;height:18px;flex:none}
+.nav .tools{margin-top:14px;padding:12px 10px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.nav .tools button{font-size:13px;padding:6px 12px}
+.nav .mode{font-size:11.5px;color:var(--ink-2);padding:8px 14px;line-height:1.45}
+.nav .sprig{margin-top:auto;margin-left:-14px;margin-right:-14px;height:170px;pointer-events:none}
+.nav .sprig svg{width:100%;height:100%}
+main{padding:28px clamp(16px,2.5vw,40px) 60px;width:100%;max-width:1800px;min-width:0}
+h1{font:600 36px/1.1 var(--serif);margin:0 0 4px;color:var(--brand-deep);letter-spacing:.2px}
+h2{font:600 22px/1.25 var(--serif);margin:0 0 12px;color:var(--ink)}
+h3{font-size:15px;margin:0 0 6px}
+.sub{color:var(--ink-2);margin:0 0 22px}
+.head{display:flex;gap:12px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:20px}
+.head .sub{margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px 22px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* màn hình rộng: 4 ô tổng quan nằm cùng 1 hàng, không để trống bên phải */
+@media (min-width:1600px){.g4-wide{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:900px){.g2{grid-template-columns:1fr}}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--ink-2)}
+.small{font-size:13px}

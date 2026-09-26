@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Phương Dung · Quản lý & chăm sóc khách hàng</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="sprite"></div>
+  <div class="app">
+    <nav class="nav" aria-label="Điều hướng">
+      <div class="brand" id="brand"></div>
+      <button data-nav="dash" data-icon="home">Tổng quan</button>
+      <button data-nav="customers" data-icon="users">Khách hàng</button>
+      <button data-nav="lookup" data-icon="search">Tra cứu lộ trình</button>
+      <button data-nav="catalog" data-icon="vial">Thuốc & dịch vụ</button>
+      <button data-nav="care" data-icon="heart">Chăm sóc</button>
+      <button data-nav="vouchers" data-icon="ticket">Voucher</button>
+      <button data-nav="staff" data-icon="idcard">Hồ sơ</button>
+      <div class="tools">
+        <button data-act="export-xlsx">⤓ Xuất Excel</button>
+        <button data-act="backup">Sao lưu dữ liệu (.json)</button>
+        <button data-act="restore">Khôi phục từ file</button>
+        <input type="file" id="restoreFile" accept=".json" hidden>
+      </div>
+      <div class="mode" id="mode">Đang kết nối dữ liệu…</div>
+      <div class="sprig" id="sprig" aria-hidden="true"></div>
+    </nav>
+    <main id="main"><p class="muted">Đang tải dữ liệu…</p></main>
+  </div>
+  <dialog id="dlg"><form id="dlgForm" method="dialog" novalidate></form></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

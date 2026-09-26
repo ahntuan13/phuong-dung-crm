@@ -1,0 +1,24 @@
+rules_version = '2';
+// Chỉ tài khoản có trong collection "allowedUsers" (id = email, chữ thường) mới đọc/ghi được.
+// Dán nội dung này vào Firebase Console → Firestore Database → Rules → Publish.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isStaff() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/allowedUsers/$(request.auth.token.email.lower()));
+    }
+
+    // Danh sách tài khoản được phép: chỉ quản trị thêm/xóa trong Console
+    match /allowedUsers/{email} {
+      allow read: if request.auth != null && request.auth.token.email.lower() == email;
+      allow write: if false;
+    }
+
+    // Dữ liệu của app
+    match /{col}/{docId} {
+      allow read, write: if isStaff()
+        && col in ['customers', 'medicines', 'services', 'treatments', 'careLogs', 'vouchers', 'staff', 'settings', 'backups', 'backupChunks'];
+    }
+  }
+}
