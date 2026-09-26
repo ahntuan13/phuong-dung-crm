@@ -1,10 +1,11 @@
-// Đọc cấu hình từ biến môi trường (không nạp thư viện Firebase ở đây để bản cục bộ nhẹ).
-const env = import.meta.env;
+// Chọn cấu hình Firebase: ưu tiên .env.local (nếu có, dùng khi test project khác), còn lại lấy firebase-config.js.
+// Không nạp thư viện Firebase ở đây để bản cục bộ nhẹ.
+import { FIREBASE_CONFIG } from './firebase-config.js';
 
-// Chưa điền (còn trống hoặc còn chữ DIEN_...) → chạy chế độ cục bộ
+const env = import.meta.env;
 const filled = (v) => !!v && !/^DIEN_/i.test(v);
 
-export const firebaseConfig = filled(env.VITE_FIREBASE_API_KEY) && filled(env.VITE_FIREBASE_PROJECT_ID) ? {
+const fromEnv = filled(env.VITE_FIREBASE_API_KEY) && filled(env.VITE_FIREBASE_PROJECT_ID) ? {
   apiKey: env.VITE_FIREBASE_API_KEY,
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: env.VITE_FIREBASE_PROJECT_ID,
@@ -13,5 +14,5 @@ export const firebaseConfig = filled(env.VITE_FIREBASE_API_KEY) && filled(env.VI
   appId: env.VITE_FIREBASE_APP_ID,
 } : null;
 
-export const isCloudMode = () => !!firebaseConfig;
-
+export const firebaseConfig = fromEnv || FIREBASE_CONFIG || null;
+export const isCloudMode = () => !!firebaseConfig?.apiKey;

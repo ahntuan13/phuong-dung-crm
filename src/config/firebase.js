@@ -1,4 +1,4 @@
-// Khởi tạo Firebase (Auth + Firestore). Cấu hình nằm trong .env.local — xem .env.example.
+// Khởi tạo Firebase (Auth + Firestore). Cấu hình nằm trong src/config/firebase-config.js.
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';

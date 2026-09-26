@@ -1,24 +1,53 @@
 rules_version = '2';
-// Chỉ tài khoản có trong collection "allowedUsers" (id = email, chữ thường) mới đọc/ghi được.
-// Dán nội dung này vào Firebase Console → Firestore Database → Rules → Publish.
+// Phương Dung CRM – dán toàn bộ nội dung này vào Firebase Console → Firestore → Rules → Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isStaff() {
-      return request.auth != null
-        && exists(/databases/$(database)/documents/allowedUsers/$(request.auth.token.email.lower()));
+    function signedIn()    { return request.auth != null; }
+    function profilePath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function hasProfile()  { return signedIn() && exists(profilePath()); }
+    function me()          { return get(profilePath()).data; }
+    function active()      { return hasProfile() && me().active != false; }
+    function isAdmin()     { return active() && me().role == 'admin'; }
+    function canWrite()    { return active() && (me().role == 'admin' || me().role == 'member'); }
+    function initialized() { return exists(/databases/$(database)/documents/meta/init); }
+
+    // Hồ sơ tài khoản: mỗi người đọc được hồ sơ của mình, admin đọc/ghi tất cả.
+    // Ngoại lệ: lần thiết lập đầu tiên (chưa có meta/init) cho phép tự tạo admin.
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if isAdmin()
+        || (signedIn() && request.auth.uid == uid && !initialized() && request.resource.data.role == 'admin');
+      allow update, delete: if isAdmin();
     }
 
-    // Danh sách tài khoản được phép: chỉ quản trị thêm/xóa trong Console
-    match /allowedUsers/{email} {
-      allow read: if request.auth != null && request.auth.token.email.lower() == email;
-      allow write: if false;
+    match /meta/{doc} {
+      allow read: if signedIn();
+      allow create: if signedIn() && doc == 'init' && !initialized();
     }
 
-    // Dữ liệu của app
-    match /{col}/{docId} {
-      allow read, write: if isStaff()
-        && col in ['customers', 'medicines', 'services', 'treatments', 'careLogs', 'vouchers', 'staff', 'settings', 'backups', 'backupChunks'];
+    // Sao lưu đám mây: người có quyền nhập liệu được TẠO bản sao lưu; chỉ admin xem / xoá.
+    // Không ai sửa được bản sao lưu đã tạo (không có quyền update) → lỗi app không ghi đè được bản cũ.
+    match /config/backup { allow read: if active(); allow write: if canWrite(); }
+    match /backups/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if canWrite();
+      match /parts/{n} {
+        allow read, delete: if isAdmin();
+        allow create: if canWrite();
+      }
+    }
+
+    // Cài đặt chung (tên thẩm mỹ viện, lời chúc mẫu): chỉ admin sửa
+    match /settings/{id} { allow read: if active(); allow write: if isAdmin(); }
+
+    // Hồ sơ nhân sự: chỉ admin sửa
+    match /staff/{id} { allow read: if active(); allow write: if isAdmin(); }
+
+    // Dữ liệu nghiệp vụ: admin + nhân viên được ghi, "Chỉ xem" chỉ đọc
+    match /{col}/{id} {
+      allow read:  if active() && col in ['customers', 'medicines', 'services', 'treatments', 'careLogs', 'vouchers'];
+      allow write: if canWrite() && col in ['customers', 'medicines', 'services', 'treatments', 'careLogs', 'vouchers'];
     }
   }
 }

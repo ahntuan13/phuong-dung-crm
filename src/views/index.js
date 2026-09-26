@@ -8,6 +8,7 @@ import { careView } from './care.js';
 import { vouchersView } from './vouchers.js';
 import { staffView } from './staff.js';
 import { backupsView } from './backups.js';
+import { usersView } from './users.js';
 
 export const VIEWS = {
   dash: dashboardView,
@@ -19,4 +20,5 @@ export const VIEWS = {
   vouchers: vouchersView,
   staff: staffView,
   backups: backupsView,
+  users: usersView,
 };

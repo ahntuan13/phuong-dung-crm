@@ -2,6 +2,7 @@
 import { esc } from '../utils/format.js';
 import { backupState } from '../services/backupState.js';
 import { empty } from '../components/cards.js';
+import { can } from '../services/session.js';
 
 const LABELS = { customers: 'khách', treatments: 'liệu trình', careLogs: 'chăm sóc', vouchers: 'voucher', staff: 'nhân sự', medicines: 'thuốc', services: 'dịch vụ' };
 const dt = (iso) => new Date(iso).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
@@ -10,6 +11,7 @@ const kb = (n) => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, 
 export function backupsView() {
   const st = backupState;
   if (!st.loader) return `<h1>Sao lưu đám mây</h1>${empty('Tính năng này chỉ có khi đăng nhập chế độ đám mây (Firebase). Ở chế độ cục bộ, hãy dùng “Sao lưu dữ liệu (.json)”.')}`;
+  if (!can('admin')) return `<h1>Sao lưu đám mây</h1>${empty('Chỉ quản trị viên xem và khôi phục được bản sao lưu. Hệ thống vẫn tự sao lưu mỗi ngày.')}`;
   if (st.list === null && !st.loading) setTimeout(st.loader, 0);
 
   const list = st.list || [];

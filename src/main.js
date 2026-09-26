@@ -26,6 +26,9 @@ import { wishFlow, templateForm } from './forms/birthday.js';
 import { backup, restoreFromFile } from './services/backup.js';
 import { backupState } from './services/backupState.js';
 import { downloadBlob } from './utils/ui.js';
+import { esc } from './utils/format.js';
+import { session, setSession, can, ROLES } from './services/session.js';
+import { userForm, resetUserPassword, changePasswordForm } from './forms/userForms.js';
 import { staffForm, deleteStaff } from './forms/staffForm.js';
 
 /* ---------- Khung giao diện tĩnh ---------- */
@@ -35,6 +38,7 @@ document.getElementById('sprig').innerHTML = SPRIG;
 document.querySelectorAll('[data-icon]').forEach((b) => b.insertAdjacentHTML('afterbegin', ICONS[b.dataset.icon] || ''));
 
 /* ---------- Hành động theo data-act ---------- */
+const WRITE_ACTS = /^(cust-|med-|svc-|tr-|step$|care-(add|edit|del)|follow-done|voucher-add|v-(use|del)|wish$|tpl$|seed-catalog|restore$|staff-)/;
 const ACTIONS = {
   'cust-add': () => customerForm(),
   'cust-edit': (d) => customerForm(byId('customers', d.id)),
@@ -74,6 +78,10 @@ const ACTIONS = {
   'backup': () => backup(),
   'restore': () => document.getElementById('restoreFile').click(),
   'logout': () => logout(),
+  'chpw': () => changePasswordForm(),
+  'user-add': () => userForm(),
+  'user-edit': (d) => userForm(d.id),
+  'user-reset': (d) => resetUserPassword(d.id),
 };
 
 document.addEventListener('click', (e) => {
@@ -85,7 +93,11 @@ document.addEventListener('click', (e) => {
   if (open && !act) { e.preventDefault(); go('customer', open.dataset.open); return; }
   const tab = e.target.closest('[data-tab]');
   if (tab) { const [k, v] = tab.dataset.tab.split(':'); UI[k] = v; render(); return; }
-  if (act) ACTIONS[act.dataset.act]?.(act.dataset);
+  if (act) {
+    const a = act.dataset.act;
+    if (!can('write') && WRITE_ACTS.test(a)) { toast('Tài khoản “Chỉ xem” không sửa được dữ liệu.'); return; }
+    ACTIONS[a]?.(act.dataset);
+  }
 });
 document.addEventListener('input', (e) => { const k = e.target.dataset?.input; if (k) { UI[k] = e.target.value; render(); } });
 document.addEventListener('change', (e) => { const k = e.target.dataset?.change; if (k) { UI[k] = e.target.value; render(); } });
@@ -108,35 +120,62 @@ if (!isCloudMode()) {
   startCloud();
 }
 
-/** Chế độ đám mây: đăng nhập Firebase → nghe dữ liệu realtime từ Firestore */
+/** Chế độ đám mây: đăng nhập Firebase → kiểm tra hồ sơ users/{uid} → nghe dữ liệu realtime */
 async function startCloud() {
   // tải động để bản cục bộ không phải nạp thư viện Firebase
-  const [{ initFirebase }, { onAuthStateChanged, signOut }, { createFirebaseAdapter }, { showLogin, hideLogin, authMessage }] = await Promise.all([
-    import('./config/firebase.js'), import('firebase/auth'), import('./data/adapters/firebase.js'), import('./components/login.js'),
+  const [{ initFirebase }, { onAuthStateChanged, signOut }, { doc, getDoc }, { createFirebaseAdapter }, login, users] = await Promise.all([
+    import('./config/firebase.js'), import('firebase/auth'), import('firebase/firestore'),
+    import('./data/adapters/firebase.js'), import('./components/login.js'), import('./services/users.js'),
   ]);
-  const { auth, db } = initFirebase();
-  logout = async () => { await signOut(auth); location.reload(); };
+  const fb = initFirebase();
+  logout = async () => { await signOut(fb.auth); location.reload(); };
   let started = false;
+  let setupPending = false;
+  const hooks = {
+    onSetupStart: () => { setupPending = true; },
+    onSetupEnd: (u) => { setupPending = false; if (u && fb.auth.currentUser) boot(u); },
+  };
+  const deny = async (code) => { await signOut(fb.auth); login.showLogin(fb, login.authMessage(code), hooks); };
 
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) { showLogin(auth); return; }
+  async function boot(user) {
     if (started) return;
     started = true;
-    hideLogin();
-    document.querySelector('.nav .tools').insertAdjacentHTML('beforeend',
-      `<button data-nav="backups">☁ Sao lưu đám mây</button><div class="user">Đăng nhập: ${user.email}</div><button data-act="logout">Đăng xuất</button>`);
     try {
-      const label = await initStore(createFirebaseAdapter(db, {
-        onError: (e) => toast(e.code === 'permission-denied' ? 'Tài khoản đã bị thu hồi quyền truy cập.' : 'Mất kết nối dữ liệu, đang thử lại…'),
+      const snap = await getDoc(doc(fb.db, 'users', user.uid));
+      if (!snap.exists()) { started = false; return deny('no-profile'); }
+      const p = snap.data();
+      if (p.active === false) { started = false; return deny('locked'); }
+      setSession({ cloud: true, uid: user.uid, email: user.email, name: p.name || user.email, role: p.role || 'viewer' });
+      login.hideLogin();
+      buildAccountMenu();
+      const label = await initStore(createFirebaseAdapter(fb.db, {
+        onError: (e) => toast(e.code === 'permission-denied' ? 'Tài khoản đã bị khoá hoặc thu hồi quyền.' : 'Mất kết nối dữ liệu, đang thử lại…'),
       }));
-      setMode(label);
+      setMode(`${label} Vai trò của bạn: ${ROLES[session.role]?.label || session.role}.`);
+      if (can('admin')) users.watchUsers(render);
       setupCloudBackup();
     } catch (e) {
       started = false;
-      await signOut(auth);
-      showLogin(auth, authMessage(e.code));
+      await signOut(fb.auth).catch(() => {});
+      login.showLogin(fb, login.authMessage(e), hooks);
     }
+  }
+
+  onAuthStateChanged(fb.auth, (user) => {
+    if (setupPending) return;
+    if (!user) { started = false; login.showLogin(fb, '', hooks); return; }
+    boot(user);
   });
+}
+
+/** Menu tài khoản ở thanh bên (chế độ đám mây) */
+function buildAccountMenu() {
+  const tools = document.querySelector('.nav .tools');
+  tools.querySelector('.acct')?.remove();
+  tools.insertAdjacentHTML('beforeend', `<div class="acct">
+    ${can('admin') ? '<button data-nav="backups">☁ Sao lưu đám mây</button><button data-nav="users">👤 Tài khoản & phân quyền</button>' : ''}
+    <div class="user"><b>${esc(session.name)}</b><br>${esc(session.email)} · ${esc(ROLES[session.role]?.label || '')}</div>
+    <button data-act="chpw">Đổi mật khẩu</button><button data-act="logout">Đăng xuất</button></div>`);
 }
 
 /* ---------- Sao lưu đám mây (chỉ chế độ Firebase) ---------- */
@@ -175,6 +214,6 @@ async function setupCloudBackup() {
   });
 
   // sao lưu tự động mỗi ngày (chạy ngầm khi có người đăng nhập)
-  try { if (await cb.autoBackupIfDue()) { st.list = null; toast('Đã tự động sao lưu dữ liệu hôm nay'); } }
+  try { if (await cb.autoBackupIfDue() && can('admin')) { st.list = null; toast('Đã tự động sao lưu dữ liệu hôm nay'); } }
   catch (e) { console.warn('Auto backup failed', e); }
 }

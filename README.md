@@ -28,7 +28,8 @@ Lưu ý: bản build cần chạy qua web server, không mở trực tiếp bằ
 index.html                  Khung trang (menu, vùng nội dung, hộp thoại)
 public/                     File tĩnh (favicon)
 src/
-  config/env.js             Đọc cấu hình Firebase từ .env.local
+  config/firebase-config.js Cấu hình Firebase – file duy nhất cần sửa khi đổi project
+  config/env.js             Chọn cấu hình (.env.local nếu có, không thì firebase-config.js)
   config/firebase.js        Khởi tạo Firebase Auth + Firestore
   main.js                   Điểm khởi động: nạp CSS, kết nối dữ liệu, gắn sự kiện (bảng ACTIONS)
   router.js                 Điều hướng màn hình + trạng thái giao diện (UI)
@@ -108,45 +109,42 @@ Mỗi buổi liệu trình được đánh dấu "đã làm" tính là 1 lượt
 
 ## Dùng chung nhiều người (Firebase)
 
-Không có file `.env.local` → app chạy **chế độ cục bộ** (dữ liệu chỉ ở trình duyệt đang dùng).
-Có cấu hình Firebase → app chạy **chế độ đám mây**: phải đăng nhập, mọi người thấy cùng một dữ liệu và tự cập nhật khi có người sửa.
+Cấu hình Firebase nằm trong **một file duy nhất**: `src/config/firebase-config.js`.
+Đổi thành `export const FIREBASE_CONFIG = null;` để chạy chế độ cục bộ (dữ liệu chỉ ở trình duyệt).
+(`.env.local`, nếu có, sẽ được ưu tiên – dùng khi muốn thử với project Firebase khác.)
 
-### 1. Tạo project Firebase (nên tạo project riêng cho app này)
-1. Vào https://console.firebase.google.com → **Add project**.
-2. **Build → Firestore Database → Create database** (chọn vùng `asia-southeast1` – Singapore).
-3. **Build → Authentication → Get started → Email/Password → Enable**.
-4. **Project settings → Your apps → Web (</>)** → đăng ký app → copy khối `firebaseConfig`.
+### Cài đặt 1 lần trong Firebase Console
+1. **Security → Authentication → Sign-in method**: bật **Email/Password**.
+2. **Databases & Storage → Firestore**: tạo database (Standard edition, vùng `asia-southeast1`).
+3. **Firestore → Rules**: dán toàn bộ file `firestore.rules` → **Publish**.
+4. Chạy app → màn hình đăng nhập → bấm **“Thiết lập lần đầu”** → tạo tài khoản quản trị đầu tiên.
+   (Chỉ làm được 1 lần; sau đó rules tự khoá chức năng này.)
 
-### 2. Cấu hình app
-Cách nhanh: chạy `npm run setup`, dán nguyên đoạn `firebaseConfig` copy từ Firebase Console → file `.env.local` được tạo tự động.
+### Tài khoản & phân quyền (trong app, menu “👤 Tài khoản & phân quyền” – chỉ admin)
+| Vai trò | Quyền |
+|---|---|
+| Quản trị | Toàn quyền: tài khoản, hồ sơ nhân sự, cài đặt, sao lưu & khôi phục |
+| Nhân viên | Xem và nhập liệu khách hàng, liệu trình, chăm sóc, voucher, thuốc & dịch vụ |
+| Chỉ xem | Chỉ xem, không sửa được gì |
 
-Cách tay: copy `.env.example` thành `.env.local` rồi điền từng giá trị. Xong chạy lại `npm run dev`.
+- Thêm tài khoản: nhập email + mật khẩu ban đầu + vai trò. Không cần vào Firebase Console.
+- Nhân viên nghỉ: bỏ tick “Đang hoạt động” để khoá tài khoản.
+- Quên mật khẩu: nút “Gửi email đặt lại mật khẩu” hoặc “Quên mật khẩu?” ở màn hình đăng nhập.
+- Mỗi người tự đổi mật khẩu ở menu “Đổi mật khẩu”.
 
-### 3. Bảo mật – bắt buộc
-- **Firestore → Rules**: dán nội dung file `firestore.rules` → **Publish**.
-- **Authentication → Users → Add user**: tạo tài khoản cho từng nhân viên (email + mật khẩu).
-- **Firestore → Data → Start collection** `allowedUsers` → mỗi nhân viên 1 document, **Document ID = email viết thường** (vd `lan@clinic.vn`), thêm field bất kỳ (vd `name`).
-  Chỉ email có trong `allowedUsers` mới đọc/ghi được dữ liệu. Muốn thu hồi quyền: xóa document đó.
+Hồ sơ tài khoản lưu ở collection `users/{uid}` (email, name, role, active). Quyền được kiểm tra ở cả giao diện lẫn `firestore.rules` phía máy chủ.
 
-> Lý do cần `allowedUsers`: API key của Firebase là công khai trong web, nên luật bảo mật phải tự giới hạn ai được truy cập.
-
-### 4. Chuyển dữ liệu đang test sang đám mây
-1. Ở bản cục bộ bấm **Sao lưu dữ liệu (.json)**.
-2. Chạy bản đã cấu hình Firebase, đăng nhập, bấm **Khôi phục từ file** và chọn file vừa tải.
-
-### 5. Đưa lên mạng (ví dụ Cloudflare Pages)
-- Build command: `npm run build` · Output directory: `dist`
-- Thêm các biến `VITE_FIREBASE_*` trong **Settings → Environment variables**.
-- **Quan trọng:** thêm tên miền của web vào **Firebase → Authentication → Settings → Authorized domains**, nếu không sẽ không đăng nhập được.
+### Đưa lên mạng
+Thêm tên miền của web vào **Security → Authentication → Settings → Authorized domains**, nếu không sẽ không đăng nhập được.
 
 ## Sao lưu đám mây (chế độ Firebase)
 
 Menu **☁ Sao lưu đám mây** (chỉ hiện khi đăng nhập chế độ đám mây):
-- **Tự động**: lần đầu có người đăng nhập mỗi ngày, app tự sao lưu toàn bộ dữ liệu lên Firestore. Giữ 30 bản tự động gần nhất.
+- **Tự động**: lần đầu có người (Quản trị hoặc Nhân viên) đăng nhập mỗi ngày, app tự sao lưu toàn bộ dữ liệu lên Firestore. Giữ 30 bản tự động gần nhất.
 - **Sao lưu ngay**: tạo bản sao lưu thủ công (nên bấm trước khi nhập/sửa hàng loạt). Bản thủ công không tự xóa.
 - **Khôi phục**: thay toàn bộ dữ liệu bằng bản đã chọn. App tự sao lưu dữ liệu hiện tại trước khi khôi phục.
 - **Tải về**: lưu bản sao lưu ra file .json trên máy (bản phòng hờ ngoài Firebase).
 
-Dữ liệu sao lưu nằm trong collection `backups` và `backupChunks` (code: `src/services/cloudBackup.js`). Chạy được với gói miễn phí Spark.
+Dữ liệu sao lưu nằm ở `backups/{id}` và `backups/{id}/parts/{n}` (code: `src/services/cloudBackup.js`). Nhân viên được tạo bản sao lưu (tự động hằng ngày); **không ai sửa được** bản đã tạo; chỉ quản trị viên xem, khôi phục và xoá. Chạy được với gói miễn phí Spark.
 
 Lớp bảo vệ cao hơn (tùy chọn, cần gói Blaze trả theo dung lượng): bật **Point-in-time recovery** và **Scheduled backups** của chính Firestore trong Firebase Console → Firestore → **Disaster recovery**.
