@@ -14,6 +14,7 @@ const MESSAGES = {
   'auth/too-many-requests': 'Thử quá nhiều lần. Vui lòng đợi ít phút rồi thử lại.',
   'auth/network-request-failed': 'Không có kết nối mạng.',
   'auth/operation-not-allowed': 'Chưa bật đăng nhập Email/Password trong Firebase Authentication.',
+  'auth/unauthorized-domain': 'Tên miền này chưa được cho phép. Thêm tên miền vào Firebase → Authentication → Settings → Authorized domains.',
   'auth/requires-recent-login': 'Vui lòng đăng nhập lại rồi thử lại.',
   'permission-denied': 'Không có quyền thực hiện (Firestore Rules). Kiểm tra lại file firestore.rules đã Publish chưa.',
   'no-profile': 'Tài khoản chưa được cấp quyền. Hãy liên hệ quản trị viên.',
