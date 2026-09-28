@@ -1,6 +1,6 @@
 // Màn hình đăng nhập + Thiết lập lần đầu (tạo quản trị viên đầu tiên). Chỉ dùng ở chế độ đám mây.
 import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, writeBatch } from 'firebase/firestore';
 import { esc } from '../utils/format.js';
 import { LOGO } from '../assets/illustrations.js';
 
@@ -26,8 +26,24 @@ export const authMessage = (e) => {
 };
 
 let mode = 'login';
+let initialized = null; // null = chưa biết, true = đã có quản trị viên → ẩn "Thiết lập lần đầu"
+
+async function checkInitialized(fb) {
+  try { initialized = (await getDoc(doc(fb.db, 'meta', 'init'))).exists(); }
+  catch { initialized = null; } // rules cũ chưa cho đọc → vẫn hiện nút như trước
+}
 
 export function showLogin(fb, message = '', hooks = {}) {
+  if (initialized === null && !showLogin.checking) {
+    showLogin.checking = true;
+    checkInitialized(fb).then(() => {
+      if (initialized && !document.getElementById('login')?.hidden) {
+        if (mode === 'setup') mode = 'login';
+        document.querySelector('#login [data-mode]')?.remove();
+      }
+    });
+  }
+  if (initialized) mode = 'login';
   let el = document.getElementById('login');
   if (!el) { el = document.createElement('div'); el.id = 'login'; document.body.appendChild(el); }
   const setup = mode === 'setup';
@@ -44,13 +60,14 @@ export function showLogin(fb, message = '', hooks = {}) {
       <button class="btn pri" type="submit" style="width:100%;justify-content:center">${setup ? 'Tạo quản trị viên' : 'Đăng nhập'}</button>
       ${setup ? '<p class="fhint" style="text-align:left">Chỉ dùng lần đầu khi hệ thống chưa có ai. Nếu đã có quản trị viên, hãy nhờ họ tạo tài khoản cho bạn.</p>'
               : '<button class="btn ghost sm" type="button" data-forgot>Quên mật khẩu?</button>'}
-      <button class="btn ghost sm" type="button" data-mode>${setup ? '← Quay lại đăng nhập' : 'Thiết lập lần đầu (chưa có tài khoản quản trị)'}</button>
+      ${initialized ? '' : `<button class="btn ghost sm" type="button" data-mode>${setup ? '← Quay lại đăng nhập' : 'Thiết lập lần đầu (chưa có tài khoản quản trị)'}</button>`}
     </form>`;
   el.hidden = false;
   const form = el.querySelector('form');
   const err = el.querySelector('.login-err');
   form.email.focus();
-  el.querySelector('[data-mode]').onclick = () => { mode = setup ? 'login' : 'setup'; showLogin(fb, '', hooks); };
+  const modeBtn = el.querySelector('[data-mode]');
+  if (modeBtn) modeBtn.onclick = () => { mode = setup ? 'login' : 'setup'; showLogin(fb, '', hooks); };
 
   form.onsubmit = async (e) => {
     e.preventDefault();
@@ -67,7 +84,7 @@ export function showLogin(fb, message = '', hooks = {}) {
       if (!name) throw { code: 'Nhập họ tên.' , message: 'Nhập họ tên.' };
       if (pw !== form.password2.value) throw { message: 'Hai mật khẩu không khớp.' };
       await setupFirstAdmin(fb, email, pw, name, hooks);
-      mode = 'login';
+      mode = 'login'; initialized = true;
     } catch (ex) {
       err.textContent = authMessage(ex);
       btn.disabled = false; btn.textContent = label;

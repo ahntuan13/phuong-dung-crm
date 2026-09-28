@@ -21,8 +21,10 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // meta/init chỉ là cờ "đã thiết lập" (không chứa dữ liệu nhạy cảm) → cho đọc công khai
+    // để màn hình đăng nhập tự ẩn nút "Thiết lập lần đầu".
     match /meta/{doc} {
-      allow read: if signedIn();
+      allow read: if doc == 'init' || signedIn();
       allow create: if signedIn() && doc == 'init' && !initialized();
     }
 
