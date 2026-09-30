@@ -62,6 +62,7 @@ export function showLogin(fb, message = '', hooks = {}) {
       ${setup ? '<p class="fhint" style="text-align:left">Chỉ dùng lần đầu khi hệ thống chưa có ai. Nếu đã có quản trị viên, hãy nhờ họ tạo tài khoản cho bạn.</p>'
               : '<button class="btn ghost sm" type="button" data-forgot>Quên mật khẩu?</button>'}
       ${initialized ? '' : `<button class="btn ghost sm" type="button" data-mode>${setup ? '← Quay lại đăng nhập' : 'Thiết lập lần đầu (chưa có tài khoản quản trị)'}</button>`}
+      <p class="credit">🔧 Developed by 3AE (chỉ dùng trong nội bộ)</p>
     </form>`;
   el.hidden = false;
   const form = el.querySelector('form');
